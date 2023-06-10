@@ -17,14 +17,14 @@ export default function NavigationBar(
       href: "/components",
     },
     {
-      name: "Discord",
-      href: "https://discord.com/invite/deno",
+      name: "Blog",
+      href: "https://deno.com/blog?tag=fresh",
     },
   ];
   const isHome = props.active == "/";
   return (
     <nav class={"flex " + props.class ?? ""}>
-      <ul class="flex justify-center items-center gap-4 mx-4 my-6 flex-wrap">
+      <ul class="flex justify-center items-center gap-2 md:gap-4 mx-2 md:mx-4 my-2 md:my-6 flex-wrap">
         {items.map((item) => (
           <li>
             <a
@@ -43,10 +43,19 @@ export default function NavigationBar(
         <li class="flex items-center">
           <a
             href="https://github.com/denoland/fresh"
-            class="hover:text-green-600 inline-block"
+            class="hover:text-green-600 inline-block transition"
             aria-label="GitHub"
           >
             <Icons.GitHub />
+          </a>
+        </li>
+        <li class="flex items-center">
+          <a
+            href="https://discord.com/invite/deno"
+            class="hover:text-green-600 inline-block transition"
+            aria-label="Discord"
+          >
+            <Icons.Discord />
           </a>
         </li>
       </ul>
