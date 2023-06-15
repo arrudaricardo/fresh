@@ -379,10 +379,20 @@ export class ServerContext {
         });
       }
 
-      // Redirect to base path if present
-      if (basePath && !url.pathname.startsWith(basePath)) {
-        const to = new URL(basePath + url.pathname, url.origin);
-        return Response.redirect(to, 302);
+      if (basePath) {
+        // Redirect to base path if present
+        if (!url.pathname.startsWith(basePath)) {
+          const to = new URL(basePath + url.pathname, url.origin);
+          return Response.redirect(to, 302);
+        } else {
+          // Strip base path for middlewares
+          const strippedUrl = new URL(
+            url.pathname.slice(basePath.length),
+            url.origin,
+          )
+            .toString();
+          req = new Request(strippedUrl, { ...req });
+        }
       }
 
       const res = await withMiddlewares(req, connInfo, inner);
