@@ -1,4 +1,5 @@
 import { TextLineStream } from "./deps.ts";
+import { stripColor } from "$std/fmt/colors.ts";
 
 export async function startFreshServer(options: Deno.CommandOptions) {
   const serverProcess = new Deno.Command(Deno.execPath(), {
@@ -17,7 +18,9 @@ export async function startFreshServer(options: Deno.CommandOptions) {
 
   let address = "";
   for await (const line of lines) {
-    const match = line.match(/https?:\/\/localhost:\d+/g);
+    const match = stripColor(line).match(
+      /https?:\/\/localhost:\d+[\/\w_-]*/g,
+    );
     if (match) {
       address = match[0];
       break;

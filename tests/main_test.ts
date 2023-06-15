@@ -5,7 +5,6 @@ import {
   assertStringIncludes,
   delay,
   puppeteer,
-  serve,
 } from "./deps.ts";
 import manifest from "./fixture/fresh.gen.ts";
 import options from "./fixture/options.ts";
@@ -790,44 +789,6 @@ Deno.test("PORT environment variable", {
   await delay(100);
 
   const resp = await fetch("http://localhost:" + PORT);
-  assert(resp);
-  assertEquals(resp.status, Status.OK);
-
-  await lines.cancel();
-  serverProcess.kill("SIGTERM");
-});
-
-Deno.test("supports setting a basePath", {
-  sanitizeOps: false,
-  sanitizeResources: false,
-}, async () => {
-  // Preparation
-  const { serverProcess, lines, address } = await startFreshServer({
-    args: ["run", "-A", "./tests/fixture_base_path/main.ts"],
-  });
-
-  // Simple proxy server
-  await serve(
-    async (request: Request) => {
-      const url = new URL(request.url);
-
-      if (!url.pathname.startsWith("/foo/bar")) {
-        const to = new URL("/foo/bar" + url.pathname, "http://localhost:3002");
-        return Response.redirect(to, 302);
-      }
-
-      const pathname = url.pathname.slice("/foo/bar".length);
-      const to = new URL(pathname || "/", "http://localhost:4000");
-      return await fetch(to, { headers: request.headers });
-    },
-    { port: 3002 },
-  );
-
-  console.log("proxy" in Deno);
-
-  await delay(100);
-
-  const resp = await fetch(address);
   assert(resp);
   assertEquals(resp.status, Status.OK);
 
