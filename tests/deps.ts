@@ -15,6 +15,7 @@ export {
 } from "https://deno.land/std@0.190.0/streams/text_line_stream.ts";
 export { delay } from "https://deno.land/std@0.190.0/async/delay.ts";
 export { retry } from "https://deno.land/std@0.190.0/async/retry.ts";
+export { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 export {
   default as puppeteer,
   Page,

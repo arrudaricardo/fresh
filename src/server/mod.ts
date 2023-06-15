@@ -79,7 +79,8 @@ export async function start(routes: Manifest, opts: StartOptions = {}) {
         "background-color: #86efac; color: black; font-weight: bold",
         "",
       );
-      const address = colors.cyan(`http://localhost:${params.port}/`);
+      const pathname = opts.basePath ?? "/";
+      const address = colors.cyan(`http://localhost:${params.port}${pathname}`);
       const localLabel = colors.bold("Local:");
       console.log(`    ${localLabel} ${address}\n`);
     };

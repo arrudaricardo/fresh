@@ -19,6 +19,7 @@ import { bundleAssetUrl } from "./constants.ts";
 import { assetHashingHook } from "../runtime/utils.ts";
 import { htmlEscapeJsonString } from "./htmlescape.ts";
 import { serialize } from "./serializer.ts";
+import { withBase } from "./router.ts";
 
 export interface RenderOptions<Data> {
   route: Route<Data> | UnknownPage | ErrorPage;
@@ -33,6 +34,7 @@ export interface RenderOptions<Data> {
   data?: Data;
   error?: unknown;
   lang?: string;
+  basePath?: string;
 }
 
 export type InnerRenderFunction = () => string;
@@ -371,6 +373,7 @@ export async function render<Data>(
     moduleScripts,
     preloads,
     lang: ctx.lang,
+    basePath: opts.basePath,
   });
 
   return [html, csp];
@@ -382,9 +385,14 @@ export interface TemplateOptions {
   moduleScripts: (readonly [string, string])[];
   preloads: string[];
   lang: string;
+  basePath?: string;
 }
 
+// Use a global variable to pass it to `options.vnode`.
+let globalBase: string | undefined;
 export function template(opts: TemplateOptions): string {
+  globalBase = opts.basePath;
+  const base = opts.basePath;
   const page = h(
     "html",
     { lang: opts.lang },
@@ -396,11 +404,12 @@ export function template(opts: TemplateOptions): string {
         name: "viewport",
         content: "width=device-width, initial-scale=1.0",
       }),
+      opts.basePath ? h("base", { href: base }) : null,
       opts.preloads.map((src) =>
-        h("link", { rel: "modulepreload", href: src })
+        h("link", { rel: "modulepreload", href: withBase(src, base) })
       ),
       opts.moduleScripts.map(([src, nonce]) =>
-        h("script", { src: src, nonce: nonce, type: "module" })
+        h("script", { src: withBase(src, base), nonce: nonce, type: "module" })
       ),
       opts.headComponents,
     ),
@@ -466,6 +475,14 @@ options.vnode = (vnode) => {
           );
         }
       };
+    }
+  } else if (
+    globalBase !== undefined && typeof vnode.type === "string" &&
+    vnode.type === "a"
+  ) {
+    const props = vnode.props as { href?: string };
+    if (props.href) {
+      props.href = withBase(props.href, globalBase);
     }
   }
   if (originalHook) originalHook(vnode);

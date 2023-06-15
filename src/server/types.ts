@@ -19,6 +19,7 @@ export interface FreshOptions {
   render?: RenderFunction;
   plugins?: Plugin[];
   staticDir?: string;
+  basePath?: string;
 }
 
 export type RenderFunction = (

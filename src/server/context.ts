@@ -86,6 +86,7 @@ export class ServerContext {
   #error: ErrorPage;
   #plugins: Plugin[];
   #builder: Builder | Promise<BuildSnapshot> | BuildSnapshot;
+  #basePath: string | undefined;
 
   constructor(
     routes: Route[],
@@ -100,6 +101,7 @@ export class ServerContext {
     configPath: string,
     jsxConfig: JSXConfig,
     dev: boolean = isDevMode(),
+    basePath?: string,
   ) {
     this.#routes = routes;
     this.#islands = islands;
@@ -118,6 +120,7 @@ export class ServerContext {
       dev: this.#dev,
       jsxConfig,
     });
+    this.#basePath = basePath;
   }
 
   /**
@@ -345,6 +348,7 @@ export class ServerContext {
       configPath,
       jsxConfig,
       dev,
+      opts.basePath,
     );
   }
 
@@ -359,6 +363,7 @@ export class ServerContext {
       this.#middlewares,
       handlers.errorHandler,
     );
+    const basePath = this.#basePath;
     return async function handler(req: Request, connInfo: ConnInfo) {
       // Redirect requests that end with a trailing slash to their non-trailing
       // slash counterpart.
@@ -374,7 +379,22 @@ export class ServerContext {
         });
       }
 
-      return await withMiddlewares(req, connInfo, inner);
+      // Redirect to base path if present
+      if (basePath && !url.pathname.startsWith(basePath)) {
+        const to = new URL(basePath + url.pathname, url.origin);
+        return Response.redirect(to, 302);
+      }
+
+      const res = await withMiddlewares(req, connInfo, inner);
+
+      // Optionally add base path to redirects
+      if (res.status >= 300 && res.status < 400) {
+        const location = res.headers.get("location");
+        if (location !== null) {
+          res.headers.set("location", router.withBase(location, basePath));
+        }
+      }
+      return res;
     };
   }
 
@@ -571,6 +591,7 @@ export class ServerContext {
             params,
             data,
             error,
+            basePath: this.#basePath,
           });
 
           const headers: Record<string, string> = {
