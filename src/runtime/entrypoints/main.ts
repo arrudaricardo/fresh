@@ -12,6 +12,7 @@ import { assetHashingHook } from "../utils.ts";
 function createRootFragment(
   parent: Element,
   replaceNode: Node | Node[],
+  endMarker: Comment,
 ) {
   replaceNode = ([] as Node[]).concat(replaceNode);
   // @ts-ignore this is fine
@@ -24,7 +25,11 @@ function createRootFragment(
       parent.insertBefore(node, child);
     },
     appendChild(child: Node) {
-      parent.appendChild(child);
+      // We cannot blindly call `.append()` as that would add
+      // the new child to the very end of the parent node. This
+      // leads to ordering issues when the multiple islands
+      // share the same parent node.
+      parent.insertBefore(child, endMarker);
     },
     removeChild(child: Node) {
       parent.removeChild(child);
@@ -203,12 +208,15 @@ function _walkInner(
             const vnode = vnodeStack.pop();
 
             const parentNode = sib.parentNode! as HTMLElement;
+            const endMarker = marker.endNode!;
+
             const _render = () =>
               render(
                 vnode,
                 createRootFragment(
                   parentNode,
                   children,
+                  endMarker,
                   // deno-lint-ignore no-explicit-any
                 ) as any as HTMLElement,
               );
@@ -224,7 +232,14 @@ function _walkInner(
             // Remove markers
             marker.startNode.remove();
             sib = sib.nextSibling;
-            marker.endNode.remove();
+            // Note: We cannot remove end markers for islands,
+            // because we need a reference point for when there
+            // are sibling islands which both render nothing
+            // into the DOM initially. Otherwise ordering would
+            // be wrong, because `.appendChild()` appends to the
+            // very end of the parent, regardless if it's shared
+            // by multiple Islands
+            //   marker.endNode.remove();
             continue;
           } else if (parent?.kind === MarkerKind.Slot) {
             // Treat the island as a standard component when it
